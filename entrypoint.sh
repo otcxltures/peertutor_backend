@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
-# Only wait for Postgres if we're actually using it (not sqlite)
-if [ "$DB_ENGINE" = "postgres" ]; then
+# Only wait for Postgres via host/port if DB_HOST is actually set
+# (local docker-compose setup). On Render, DATABASE_URL is used instead,
+# and Render only starts this container once the DB is reachable, so no wait is needed.
+if [ "$DB_ENGINE" = "postgres" ] && [ -n "$DB_HOST" ]; then
   echo "Waiting for Postgres at $DB_HOST:$DB_PORT..."
   while ! nc -z "$DB_HOST" "$DB_PORT"; do
     sleep 0.5
