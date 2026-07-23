@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: peertutor_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-peertutor}
+      POSTGRES_USER: ${DB_USER:-peertutor}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-peertutor}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-peertutor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: peertutor_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Force postgres inside Docker regardless of .env's local default
+      DB_ENGINE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:
