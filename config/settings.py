@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
 from decouple import config as env
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -62,6 +63,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # --- Database ---
 # For quick local testing without Postgres installed, set DB_ENGINE=sqlite in .env
+# --- Database ---
+# For quick local testing without Postgres installed, set DB_ENGINE=sqlite in .env
 if env("DB_ENGINE", default="postgres") == "sqlite":
     DATABASES = {
         "default": {
@@ -69,7 +72,17 @@ if env("DB_ENGINE", default="postgres") == "sqlite":
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+elif env("DATABASE_URL", default=""):
+    # Render (and most cloud hosts) provide a single DATABASE_URL
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=env("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
 else:
+    # Local Docker Compose setup (separate DB_* variables)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
